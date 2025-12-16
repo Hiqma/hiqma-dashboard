@@ -9,6 +9,8 @@ interface ContributorApplicationFormProps {
   onClose: () => void;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export function ContributorApplicationForm({ isOpen, onClose }: ContributorApplicationFormProps) {
   const [formData, setFormData] = useState({
     name: '',
@@ -26,7 +28,7 @@ export function ContributorApplicationForm({ isOpen, onClose }: ContributorAppli
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/contributors/apply', {
+      const response = await fetch(`${API_URL}/contributors/apply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
