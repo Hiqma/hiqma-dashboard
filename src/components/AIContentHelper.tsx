@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { SparklesIcon, LightBulbIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { LightBulbIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 interface AIContentHelperProps {
   content: string;
@@ -61,8 +61,7 @@ export function AIContentHelper({ content, title, step = 2, onApplySuggestion, o
     <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-200 sticky top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <SparklesIcon className="h-6 w-6 text-purple-600" />
-          <h3 className="text-lg font-semibold text-black">AI Writing Assistant</h3>
+          {/* <h3 className="text-lg font-semibold text-black">AI Writing Assistant</h3> */}
         </div>
         <div className="flex flex-col gap-2">
           {step === 2 && (

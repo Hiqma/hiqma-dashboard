@@ -7,6 +7,7 @@ import { ToastContainer } from '@/components/Toast';
 import { ConfirmationProvider } from '@/contexts/ConfirmationContext';
 import { LayoutWrapper } from '@/components/LayoutWrapper';
 import "./globals.css";
+import "../styles/tiptap.css";
 
 const inter = Inter({
   subsets: ["latin"],

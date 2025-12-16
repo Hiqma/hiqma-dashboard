@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { PlusIcon, DocumentTextIcon, MagnifyingGlassIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, DocumentTextIcon, MagnifyingGlassIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { contentController } from '@/controllers/contentController';
 
 export function ContributorContentManagement() {
@@ -51,6 +51,7 @@ export function ContributorContentManagement() {
           <table className="w-full">
             <thead className="bg-white">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Cover</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Title</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Category</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Language</th>
@@ -67,16 +68,26 @@ export function ContributorContentManagement() {
               ).map((content: any) => (
                 <tr key={content.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <DocumentTextIcon className="h-8 w-8 text-gray-400 mr-3" />
-                      <div>
-                        <div className="text-sm font-medium text-black">{content.title}</div>
-                        {content.description && (
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {content.description}
-                          </div>
-                        )}
+                    {content.coverImageUrl ? (
+                      <img
+                        src={content.coverImageUrl}
+                        alt={`Cover for ${content.title}`}
+                        className="w-12 h-16 object-cover rounded shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-12 h-16 bg-gray-200 rounded flex items-center justify-center">
+                        <DocumentTextIcon className="h-6 w-6 text-gray-400" />
                       </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div>
+                      <div className="text-sm font-medium text-black">{content.title}</div>
+                      {content.description && (
+                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                          {content.description}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-black">{content.category?.name || 'N/A'}</td>
@@ -94,14 +105,23 @@ export function ContributorContentManagement() {
                     {new Date(content.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4">
-                    {content.status === 'pending' && (
+                    <div className="flex items-center gap-2">
                       <a
-                        href={`/add-content?id=${content.id}`}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        href={`/review-content/${content.id}`}
+                        className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center gap-1"
                       >
-                        Edit
+                        <EyeIcon className="h-4 w-4" />
+                        Preview
                       </a>
-                    )}
+                      {content.status === 'pending' && (
+                        <a
+                          href={`/add-content?id=${content.id}`}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium ml-2"
+                        >
+                          Edit
+                        </a>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

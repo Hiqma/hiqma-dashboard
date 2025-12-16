@@ -4,9 +4,7 @@ import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/contexts/ToastContext';
-import dynamic from 'next/dynamic';
-
-const EditorContent = dynamic(() => import('novel').then(mod => ({ default: mod.EditorContent })), { ssr: false });
+import { MobileBookPreview } from '@/components/MobileBookPreview';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -81,46 +79,77 @@ export default function ReviewContentPage() {
     <div className="pt-16 bg-[#f5f5f7] min-h-screen">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-black">Review Content</h1>
-          <p className="text-gray-600 mt-1">Review and approve or reject submitted content.</p>
+          <h1 className="text-3xl font-bold text-black">
+            {content.status === 'verified' ? 'View Content' : 'Review Content'}
+          </h1>
+          <p className="text-gray-600 mt-1">
+            {content.status === 'verified' 
+              ? 'View approved content details.' 
+              : content.status === 'rejected'
+              ? 'View rejected content details.'
+              : 'Review and approve or reject submitted content.'}
+          </p>
+          {content.status === 'verified' && (
+            <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+              ✓ Approved
+            </div>
+          )}
+          {content.status === 'rejected' && (
+            <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+              ✗ Rejected
+              {content.rejectionReason && (
+                <span className="ml-2 text-xs">- {content.rejectionReason}</span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="space-y-6">
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-black mb-4">Content Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-black mb-1">Title</label>
-                <p className="text-gray-800">{content.title}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-black mb-1">Language</label>
-                <p className="text-gray-800">{content.language}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-black mb-1">Age Group</label>
-                <p className="text-gray-800">{content.ageGroup?.name}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-black mb-1">Contributor</label>
-                <p className="text-gray-800">{content.contributor?.name}</p>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-black mb-1">Description</label>
-                <p className="text-gray-800">{content.description || 'No description provided'}</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Cover Image */}
+              {content.coverImageUrl && (
+                <div className="lg:col-span-1">
+                  <label className="block text-sm font-medium text-black mb-2">Cover Image</label>
+                  <div className="w-48 h-64 mx-auto lg:mx-0 rounded-lg overflow-hidden shadow-lg" style={{ aspectRatio: '3/4' }}>
+                    <img
+                      src={content.coverImageUrl}
+                      alt={`Cover for ${content.title}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Content Details */}
+              <div className={`${content.coverImageUrl ? 'lg:col-span-2' : 'lg:col-span-3'} grid grid-cols-1 md:grid-cols-2 gap-4`}>
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">Title</label>
+                  <p className="text-gray-800">{content.title}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">Language</label>
+                  <p className="text-gray-800">{content.language}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">Age Group</label>
+                  <p className="text-gray-800">{content.ageGroup?.name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">Contributor</label>
+                  <p className="text-gray-800">{content.contributor?.name}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-black mb-1">Description</label>
+                  <p className="text-gray-800">{content.description || 'No description provided'}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h2 className="text-xl font-semibold text-black mb-4">Content Preview</h2>
-            <div className="border border-gray-200 rounded-lg p-4 bg-white">
-              <div 
-                className="prose prose-lg max-w-none"
-                dangerouslySetInnerHTML={{ __html: content.htmlContent }}
-              />
-            </div>
-          </div>
+          {/* Tablet Preview */}
+          <MobileBookPreview content={content} />
 
           {(() => {
             try {
@@ -175,22 +204,26 @@ export default function ReviewContentPage() {
             >
               Back to Content
             </button>
-            <button
-              type="button"
-              onClick={() => setShowRejectModal(true)}
-              disabled={loading}
-              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-            >
-              Reject
-            </button>
-            <button
-              type="button"
-              onClick={() => handleStatusUpdate('verified')}
-              disabled={loading}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? 'Approving...' : 'Approve'}
-            </button>
+            {content.status === 'pending' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowRejectModal(true)}
+                  disabled={loading}
+                  className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                >
+                  Reject
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStatusUpdate('verified')}
+                  disabled={loading}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                >
+                  {loading ? 'Approving...' : 'Approve'}
+                </button>
+              </>
+            )}
           </div>
         </div>
 

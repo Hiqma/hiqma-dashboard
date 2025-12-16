@@ -2,17 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/contexts/ToastContext';
 import { categoriesController } from '@/controllers/categoriesController';
 import { authorsController } from '@/controllers/authorsController';
 import { SearchableMultiSelect } from './SearchableMultiSelect';
 import { AIContentHelper } from './AIContentHelper';
-
-const Editor = dynamic(() => import('@/components/NovelEditor'), {
-  ssr: false,
-});
+import { SparklesIcon } from '@heroicons/react/24/outline';
+import { TipTapEditor } from './TipTapEditor';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -49,7 +46,12 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
     targetCountries: [''],
     ageGroupId: '',
     comprehensionQuestions: [] as ComprehensionQuestion[],
+    coverImageUrl: '',
   });
+  
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string>('');
+  const [uploadingCoverImage, setUploadingCoverImage] = useState(false);
 
   // Fetch data
   const { data: categoriesData } = useQuery({
@@ -124,7 +126,12 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
         targetCountries: existingContent.targetCountries ? JSON.parse(existingContent.targetCountries) : [''],
         ageGroupId: existingContent.ageGroupId || '',
         comprehensionQuestions: processedQuestions,
+        coverImageUrl: existingContent.coverImageUrl || '',
       });
+      
+      if (existingContent.coverImageUrl) {
+        setCoverImagePreview(existingContent.coverImageUrl);
+      }
       setInitialLoading(false);
     }
   }, [existingContent, isEdit]);
@@ -133,9 +140,9 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
   const authors = authorsData?.data || [];
 
   const steps = [
-    { id: 1, name: 'Metadata', description: 'Basic information' },
-    { id: 2, name: 'Content', description: 'Write your content' },
-    { id: 3, name: 'Questions', description: 'Add comprehension questions' }
+    { id: 1, name: 'Metadata', description: isEdit ? 'Update information' : 'Basic information' },
+    { id: 2, name: 'Content', description: isEdit ? 'Edit your content' : 'Write your content' },
+    { id: 3, name: 'Questions', description: isEdit ? 'Update questions' : 'Add comprehension questions' }
   ];
 
   const addQuestion = () => {
@@ -163,6 +170,71 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
   const removeQuestion = (index: number) => {
     const updatedQuestions = formData.comprehensionQuestions.filter((_, i) => i !== index);
     setFormData({ ...formData, comprehensionQuestions: updatedQuestions });
+  };
+
+  const handleCoverImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Invalid File', 'Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('error', 'File Too Large', 'Please select an image smaller than 5MB');
+      return;
+    }
+
+    setCoverImageFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setCoverImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload immediately
+    await uploadCoverImage(file);
+  };
+
+  const uploadCoverImage = async (file: File) => {
+    setUploadingCoverImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch(`${API_BASE}/upload/image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setFormData(prev => ({ ...prev, coverImageUrl: result.url }));
+        showToast('success', 'Image Uploaded', 'Cover image uploaded successfully');
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      showToast('error', 'Upload Failed', 'Failed to upload cover image');
+      setCoverImageFile(null);
+      setCoverImagePreview('');
+    } finally {
+      setUploadingCoverImage(false);
+    }
+  };
+
+  const removeCoverImage = () => {
+    setCoverImageFile(null);
+    setCoverImagePreview('');
+    setFormData(prev => ({ ...prev, coverImageUrl: '' }));
   };
 
   const validateStep = (step: number): boolean => {
@@ -210,8 +282,8 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
       });
 
       if (response.ok) {
-        const message = isEdit ? 'Content updated successfully' : 'Your content has been submitted for review';
-        showToast('success', isEdit ? 'Content Updated' : 'Content Submitted', message);
+        const message = isEdit ? 'Your changes have been saved successfully!' : 'Your content has been submitted for review';
+        showToast('success', isEdit ? 'Changes Saved' : 'Content Submitted', message);
         router.push('/content');
       } else {
         const error = await response.json();
@@ -257,7 +329,7 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
 
   const renderStep1 = () => (
     <div className="bg-white rounded-xl p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-black mb-6">Content Metadata</h2>
+      <h2 className="text-xl font-semibold text-black mb-6">{isEdit ? 'Update Metadata' : 'Content Metadata'}</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
@@ -335,48 +407,130 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
           placeholder="Brief description of the content"
         />
       </div>
-    </div>
-  );
 
-  const renderStep2 = () => (
-    <div>
-      <h2 className="text-xl font-semibold text-black mb-6">Confidently Write!</h2>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Editor - Takes 2 columns */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm">
-          <Editor
-            key={contentId || 'new'}
-            defaultValue={formData.htmlContent}
-            onUpdate={(html) => {
-              setFormData({ ...formData, htmlContent: html });
-            }}
-          />
-        </div>
-        
-        {/* AI Helper - Takes 1 column */}
-        <div className="lg:col-span-1">
-          <AIContentHelper 
-            content={formData.htmlContent}
-            title={formData.title}
-            step={2}
-            onApplySuggestion={(suggestion) => {
-              console.log('Suggestion:', suggestion);
-            }}
-            onInsertContent={(newContent) => {
-              const combined = formData.htmlContent + '\n\n' + newContent;
-              setFormData({ ...formData, htmlContent: combined });
-            }}
-          />
+      <div className="mt-6">
+        <label className="block text-sm font-medium text-black mb-2">Cover Image</label>
+        <div className="flex justify-center">
+          <div className="w-48 h-64 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-gray-50 shadow-lg relative" style={{ aspectRatio: '3/4' }}>
+            {coverImagePreview ? (
+              <>
+                <img
+                  src={coverImagePreview}
+                  alt="Cover preview"
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={removeCoverImage}
+                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-md z-10"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <label htmlFor="cover-image" className="absolute inset-0 cursor-pointer bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                  <span className="bg-white bg-opacity-90 px-3 py-1 rounded-full text-sm font-medium text-gray-800 opacity-0 hover:opacity-100 transition-opacity">
+                    Change Image
+                  </span>
+                </label>
+                <input
+                  id="cover-image"
+                  name="cover-image"
+                  type="file"
+                  className="sr-only"
+                  accept="image/*"
+                  onChange={handleCoverImageChange}
+                  disabled={uploadingCoverImage}
+                />
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                <svg className="w-12 h-12 text-gray-400 mb-3" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <label htmlFor="cover-image" className="cursor-pointer">
+                  <span className="block text-sm font-medium text-gray-900 mb-1">
+                    {uploadingCoverImage ? 'Uploading...' : 'Upload Cover'}
+                  </span>
+                  <span className="block text-xs text-gray-500">
+                    PNG, JPG up to 5MB
+                  </span>
+                </label>
+                <input
+                  id="cover-image"
+                  name="cover-image"
+                  type="file"
+                  className="sr-only"
+                  accept="image/*"
+                  onChange={handleCoverImageChange}
+                  disabled={uploadingCoverImage}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 
+  const renderStep2 = () => {
+    // Calculate approximate page count (assuming ~500 words per page)
+    const wordCount = formData.htmlContent.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length;
+    const pageCount = Math.max(1, Math.ceil(wordCount / 500));
+    
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-black">{isEdit ? 'Update Your Content!' : 'Confidently Write!'}</h2>
+          <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+            {wordCount} words • ~{pageCount} page{pageCount !== 1 ? 's' : ''}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Editor - Takes 3 columns */}
+          <div className="lg:col-span-3 bg-white rounded-xl shadow-sm p-6">
+            <TipTapEditor
+              key={contentId || 'new'}
+              content={formData.htmlContent}
+              onChange={(html) => {
+                setFormData({ ...formData, htmlContent: html });
+              }}
+              placeholder="Start writing your content..."
+              className="min-h-[500px]"
+            />
+          </div>
+          
+          {/* AI Helper - Takes 1 column */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <SparklesIcon className="h-5 w-5 text-purple-600" />
+                <h3 className="text-sm font-semibold text-black">AI Writing Assistant</h3>
+              </div>
+              <AIContentHelper 
+                content={formData.htmlContent}
+                title={formData.title}
+                step={2}
+                onApplySuggestion={(suggestion) => {
+                  console.log('Suggestion:', suggestion);
+                }}
+                onInsertContent={(newContent) => {
+                  const combined = formData.htmlContent + '\n\n' + newContent;
+                  setFormData({ ...formData, htmlContent: combined });
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderStep3 = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="lg:col-span-3 bg-white rounded-xl p-6 shadow-sm">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-black">Comprehension Questions</h2>
+        <h2 className="text-xl font-semibold text-black">{isEdit ? 'Update Questions' : 'Comprehension Questions'}</h2>
         <button
           type="button"
           onClick={addQuestion}
@@ -530,7 +684,9 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
       
       {/* AI Helper for Questions */}
       <div className="lg:col-span-1">
-        <AIContentHelper 
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          {/* <h3 className="text-sm font-semibold text-black mb-4">AI Writing Assistant</h3> */}
+          <AIContentHelper 
           content={formData.htmlContent}
           title={formData.title}
           step={3}
@@ -539,7 +695,8 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
             // Parse and add questions - simplified for now
             alert('Questions generated! You can manually add them below.');
           }}
-        />
+          />
+        </div>
       </div>
     </div>
   );
@@ -553,11 +710,21 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
       ) : (
         <>
           <div className="mb-8">
+            {isEdit && (
+              <div className="mb-4 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  <span className="text-sm font-medium text-blue-800">Editing Mode</span>
+                </div>
+              </div>
+            )}
             <h1 className="text-3xl font-bold text-black">
-              {isEdit ? 'Edit Content' : 'Add New Content'}
+              {isEdit ? 'Update Content' : 'Add New Content'}
             </h1>
             <p className="text-gray-600 mt-1">
-              {isEdit ? 'Update your educational content.' : 'Create and submit new educational content for review.'}
+              {isEdit ? 'Make changes to your educational content and save updates.' : 'Create and submit new educational content for review.'}
             </p>
           </div>
 
@@ -574,7 +741,7 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
                 onClick={() => router.push('/content')}
                 className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {isEdit ? 'Discard Changes' : 'Cancel'}
               </button>
               
               {currentStep > 1 && (
@@ -594,7 +761,7 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
                   disabled={!validateStep(currentStep)}
                   className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Next
+                  {isEdit ? 'Continue' : 'Next'}
                 </button>
               ) : (
                 <button
@@ -603,7 +770,7 @@ export function MultiStepContentForm({ contentId, isEdit = false }: MultiStepCon
                   disabled={loading || !validateStep(1) || !validateStep(2)}
                   className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {loading ? (isEdit ? 'Updating...' : 'Submitting...') : (isEdit ? 'Update Content' : 'Submit Content')}
+                  {loading ? (isEdit ? 'Saving Changes...' : 'Submitting...') : (isEdit ? 'Save Changes' : 'Submit Content')}
                 </button>
               )}
             </div>

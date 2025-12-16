@@ -1,18 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/contexts/ToastContext';
 import { categoriesController } from '@/controllers/categoriesController';
 import { authorsController } from '@/controllers/authorsController';
+import { contentController } from '@/controllers/contentController';
 import { SearchableMultiSelect } from './SearchableMultiSelect';
 import { TipTapEditor } from './TipTapEditor';
 import { CoverImageUpload } from './CoverImageUpload';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-export function AddContentForm() {
+interface EditContentFormProps {
+  contentId: string;
+  onClose?: () => void;
+}
+
+export function EditContentForm({ contentId, onClose }: EditContentFormProps) {
   const router = useRouter();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -27,6 +33,13 @@ export function AddContentForm() {
     categoryId: [] as string[],
     targetCountries: [''],
     ageGroupId: '',
+  });
+
+  // Fetch content details
+  const { data: contentData, isLoading: contentLoading } = useQuery({
+    queryKey: ['content', contentId],
+    queryFn: () => contentController.getById(contentId),
+    enabled: !!contentId,
   });
 
   // Fetch categories from API
@@ -53,15 +66,33 @@ export function AddContentForm() {
   const categories = categoriesData?.data || [];
   const authors = authorsData?.data || [];
 
-
+  // Populate form when content data is loaded
+  useEffect(() => {
+    if (contentData) {
+      setFormData({
+        title: contentData.title || '',
+        description: contentData.description || '',
+        htmlContent: contentData.htmlContent || '',
+        coverImageUrl: contentData.coverImageUrl || '',
+        authorId: contentData.authorId || [],
+        language: contentData.language || 'English',
+        originalLanguage: contentData.originalLanguage || 'English',
+        categoryId: contentData.categoryId || [],
+        targetCountries: Array.isArray(contentData.targetCountries) 
+          ? contentData.targetCountries 
+          : JSON.parse(contentData.targetCountries || '[""]'),
+        ageGroupId: contentData.ageGroupId || '',
+      });
+    }
+  }, [contentData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/content/submit', {
-        method: 'POST',
+      const response = await fetch(`${API_BASE}/content/${contentId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
@@ -70,29 +101,42 @@ export function AddContentForm() {
       });
 
       if (response.ok) {
-        showToast('success', 'Content Submitted', 'Your content has been submitted for review');
-        router.push('/content');
+        showToast('success', 'Content Updated', 'Content has been successfully updated');
+        if (onClose) {
+          onClose();
+        } else {
+          router.push('/content');
+        }
       } else {
         const error = await response.json();
-        showToast('error', 'Submission Failed', error.message || 'Failed to submit content');
+        showToast('error', 'Update Failed', error.message || 'Failed to update content');
       }
     } catch (error) {
-      showToast('error', 'Submission Failed', 'Failed to submit content');
+      showToast('error', 'Update Failed', 'Failed to update content');
     } finally {
       setLoading(false);
     }
   };
 
+  if (contentLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-black">
-          Add New Content
+          Edit Content
         </h1>
         <p className="text-gray-600 mt-1">
-          Create and submit new educational content for review.
+          Update content details and formatting.
         </p>
       </div>
+      
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white rounded-xl p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-black mb-6">Content Details</h2>
@@ -212,7 +256,7 @@ export function AddContentForm() {
         <div className="flex gap-4">
           <button
             type="button"
-            onClick={() => router.push('/content')}
+            onClick={onClose || (() => router.push('/content'))}
             className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Cancel
@@ -222,7 +266,7 @@ export function AddContentForm() {
             disabled={loading}
             className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Submitting...' : 'Submit Content'}
+            {loading ? 'Updating...' : 'Update Content'}
           </button>
         </div>
       </form>

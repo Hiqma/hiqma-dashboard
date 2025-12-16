@@ -1,0 +1,50 @@
+.tiptap-viewer .ProseMirror {
+  outline: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tiptap-viewer .ProseMirror p {
+  margin: 0 0 1em 0;
+  line-height: 1.6;
+}
+
+.tiptap-viewer .ProseMirror h1,
+.tiptap-viewer .ProseMirror h2,
+.tiptap-viewer .ProseMirror h3 {
+  margin: 0 0 0.5em 0;
+  font-weight: 600;
+}
+
+.tiptap-viewer .ProseMirror h1 {
+  font-size: 1.5em;
+}
+
+.tiptap-viewer .ProseMirror h2 {
+  font-size: 1.3em;
+}
+
+.tiptap-viewer .ProseMirror h3 {
+  font-size: 1.1em;
+}
+
+.tiptap-viewer .ProseMirror ul,
+.tiptap-viewer .ProseMirror ol {
+  margin: 0 0 1em 0;
+  padding-left: 1.5em;
+}
+
+.tiptap-viewer .ProseMirror li {
+  margin: 0.25em 0;
+}
+
+.tiptap-viewer .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.tiptap-viewer .ProseMirror a {
+  color: #3b82f6;
+  text-decoration: underline;
+}

@@ -188,7 +188,7 @@ export function LandingPage() {
                 </div>
                 <h4 className="font-semibold text-black mb-2">Share Offline</h4>
                 <p className="text-gray-600 text-sm">
-                  Content syncs to local Edge Hubs, accessible to students and practitioners without internet
+                  Content syncs to local Edge Hubs, accessible to readers and practitioners without internet
                 </p>
               </div>
             </div>
