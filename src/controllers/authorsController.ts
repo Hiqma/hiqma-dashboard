@@ -18,8 +18,9 @@ export interface CreateAuthorData {
 }
 
 export interface AuthorStats {
-  totalBooks: number;
-  publishedWorks: number;
+  totalContent: number;
+  publishedContent: number;
+  draftContent: number;
   yearsActive: number;
 }
 
@@ -38,6 +39,12 @@ export interface SearchAuthorsResponse {
 
 export const authorsController = {
   getAll: (): Promise<Author[]> => apiClient.get('/authors'),
+  
+  getById: (id: string): Promise<Author> => 
+    apiClient.get(`/authors/${id}`),
+  
+  getContent: (id: string): Promise<any[]> => 
+    apiClient.get(`/authors/${id}/content`),
   
   create: (data: CreateAuthorData): Promise<Author> => 
     apiClient.post('/authors', data),

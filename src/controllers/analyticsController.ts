@@ -95,13 +95,18 @@ export const analyticsController = {
     return response.json();
   },
 
-  async getDeviceAnalytics(hubId: string, filters?: AnalyticsFilters): Promise<DeviceAnalytics[]> {
+  async getDeviceAnalytics(hubId?: string, filters?: AnalyticsFilters): Promise<DeviceAnalytics[]> {
     const params = new URLSearchParams();
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
     if (filters?.contentId) params.append('contentId', filters.contentId);
 
-    const response = await fetch(`${API_BASE_URL}/devices/${hubId}/analytics?${params}`, {
+    // Use different endpoint based on whether hubId is provided
+    const endpoint = hubId 
+      ? `${API_BASE_URL}/devices/${hubId}/analytics?${params}`
+      : `${API_BASE_URL}/devices/analytics?${params}`;
+
+    const response = await fetch(endpoint, {
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
         'Content-Type': 'application/json',
@@ -115,14 +120,19 @@ export const analyticsController = {
     return response.json();
   },
 
-  async getStudentAnalytics(hubId: string, filters?: AnalyticsFilters): Promise<StudentAnalytics[]> {
+  async getStudentAnalytics(hubId?: string, filters?: AnalyticsFilters): Promise<StudentAnalytics[]> {
     const params = new URLSearchParams();
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
     if (filters?.contentId) params.append('contentId', filters.contentId);
     if (filters?.grade) params.append('grade', filters.grade);
 
-    const response = await fetch(`${API_BASE_URL}/students/${hubId}/analytics?${params}`, {
+    // Use different endpoint based on whether hubId is provided
+    const endpoint = hubId
+      ? `${API_BASE_URL}/students/${hubId}/analytics?${params}`
+      : `${API_BASE_URL}/students/analytics?${params}`;
+
+    const response = await fetch(endpoint, {
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
         'Content-Type': 'application/json',

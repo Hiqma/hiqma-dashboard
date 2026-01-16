@@ -40,4 +40,35 @@ export const hubsController = {
     });
     return response.json();
   },
+
+  async getHubSettings(hubId: string) {
+    const response = await fetch(`${API_BASE_URL}/edge-hubs/${hubId}/settings`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch hub settings');
+    }
+    return response.json();
+  },
+
+  async updateHubSettings(hubId: string, settings: {
+    allowAnonymousAccess?: boolean;
+    requireStudentAuthentication?: boolean;
+    authenticationMessage?: string;
+  }) {
+    const response = await fetch(`${API_BASE_URL}/edge-hubs/${hubId}/settings`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update hub settings');
+    }
+    return response.json();
+  },
 };

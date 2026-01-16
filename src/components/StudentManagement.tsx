@@ -3,19 +3,28 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  UserIcon,
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  DocumentArrowDownIcon,
-  DocumentArrowUpIcon,
-  ClipboardDocumentIcon,
-  MagnifyingGlassIcon,
-  ExclamationTriangleIcon,
-  AcademicCapIcon
-} from '@heroicons/react/24/outline';
+  User,
+  Plus,
+  Pencil,
+  Trash2,
+  Download,
+  Upload,
+  Copy,
+  Search,
+  AlertTriangle,
+  GraduationCap
+} from 'lucide-react';
 import { studentsController, Student, CreateStudentRequest, UpdateStudentRequest } from '@/controllers/studentsController';
 import { useToast } from '@/contexts/ToastContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface StudentManagementProps {
   hubId: string;
@@ -182,17 +191,6 @@ export default function StudentManagement({ hubId }: StudentManagementProps) {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
@@ -212,54 +210,50 @@ export default function StudentManagement({ hubId }: StudentManagementProps) {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Students</p>
-              <p className="text-2xl font-bold text-black mt-1">{studentStats?.total || 0}</p>
-            </div>
-            <UserIcon className="h-8 w-8 text-blue-500" />
-          </div>
-        </div>
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <User className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{studentStats?.total || 0}</div>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-black mt-1">{studentStats?.active || 0}</p>
-            </div>
-            <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-              <div className="h-3 w-3 bg-green-500 rounded-full"></div>
-            </div>
-          </div>
-        </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active</CardTitle>
+            <div className="h-4 w-4 rounded-full bg-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{studentStats?.active || 0}</div>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Average Age</p>
-              <p className="text-2xl font-bold text-black mt-1">
-                {studentStats?.averageAge ? Math.round(studentStats.averageAge) : 'N/A'}
-              </p>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Average Age</CardTitle>
+            <GraduationCap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {studentStats?.averageAge ? Math.round(studentStats.averageAge) : 'N/A'}
             </div>
-            <AcademicCapIcon className="h-8 w-8 text-purple-500" />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Grades</p>
-              <p className="text-2xl font-bold text-black mt-1">
-                {studentStats?.byGrade ? Object.keys(studentStats.byGrade).length : 0}
-              </p>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Grades</CardTitle>
+            <div className="h-4 w-4 rounded-full bg-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {studentStats?.byGrade ? Object.keys(studentStats.byGrade).length : 0}
             </div>
-            <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
-              <div className="h-3 w-3 bg-orange-500 rounded-full"></div>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Controls */}
@@ -267,447 +261,439 @@ export default function StudentManagement({ hubId }: StudentManagementProps) {
         <div className="flex justify-between items-center gap-4">
           <div className="flex gap-4 flex-1">
             <div className="relative flex-1 max-w-md">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
                 placeholder="Search students..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-black placeholder-gray-500"
+                className="pl-9"
               />
             </div>
             
-            <select
+            <Select
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
+              onValueChange={(value) => {
+                setStatusFilter(value);
                 setCurrentPage(1);
               }}
-              className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-black"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <select
+            <Select
               value={gradeFilter}
-              onChange={(e) => {
-                setGradeFilter(e.target.value);
+              onValueChange={(value) => {
+                setGradeFilter(value);
                 setCurrentPage(1);
               }}
-              className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-black"
             >
-              <option value="all">All Grades</option>
-              {grades.map(grade => (
-                <option key={grade} value={grade}>Grade {grade}</option>
-              ))}
-            </select>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Grades" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Grades</SelectItem>
+                {grades.map(grade => (
+                  <SelectItem key={grade} value={grade}>Grade {grade}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="outline"
               onClick={() => setShowImportModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
             >
-              <DocumentArrowUpIcon className="h-4 w-4" />
+              <Upload className="mr-2 h-4 w-4" />
               Import
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleExportStudents}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              <DocumentArrowDownIcon className="h-4 w-4" />
+              <Download className="mr-2 h-4 w-4" />
               Export
-            </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              <PlusIcon className="h-4 w-4" />
+            </Button>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="mr-2 h-4 w-4" />
               Add Student
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Students Table */}
-      <div className="bg-white rounded-xl overflow-hidden shadow-sm">
+      <Card>
         {isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
-          </div>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-[150px]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Code
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Grade
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Age
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {studentsData?.students?.map((student: Student) => (
-                    <tr key={student.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <UserIcon className="h-8 w-8 text-gray-400 mr-3" />
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {getDisplayName(student)}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Created {formatDate(student.createdAt)}
-                            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Grade</TableHead>
+                  <TableHead>Age</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {studentsData?.students?.map((student: Student) => (
+                  <TableRow key={student.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <div className="font-medium">
+                            {getDisplayName(student)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Created {formatDate(student.createdAt)}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <code className="px-2 py-1 bg-gray-100 rounded text-sm font-mono">
-                            {student.studentCode}
-                          </code>
-                          <button
-                            onClick={() => handleCopyCode(student.studentCode)}
-                            className="p-1 hover:bg-gray-200 rounded transition-colors"
-                            title="Copy code"
-                          >
-                            <ClipboardDocumentIcon className="h-4 w-4 text-gray-500" />
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {student.grade ? `Grade ${student.grade}` : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {student.age || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(student.status)}`}>
-                          {student.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEditStudent(student)}
-                            className="p-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors"
-                            title="Edit student"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => setShowDeleteModal(student.id)}
-                            className="p-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors"
-                            title="Deactivate student"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {studentsData?.students?.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  {searchTerm ? 'No students found matching your search.' : 'No students added yet'}
-                </div>
-              )}
-            </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <code className="px-2 py-1 bg-muted rounded text-sm font-mono">
+                          {student.studentCode}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyCode(student.studentCode)}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {student.grade ? `Grade ${student.grade}` : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {student.age || 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
+                        {student.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditStudent(student)}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowDeleteModal(student.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            
+            {studentsData?.students?.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                {searchTerm ? 'No students found matching your search.' : 'No students added yet'}
+              </div>
+            )}
             
             {/* Pagination */}
             {studentsData && studentsData.totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-                <div className="text-sm text-gray-700">
+              <div className="flex items-center justify-between px-6 py-4 border-t">
+                <div className="text-sm text-muted-foreground">
                   Page {currentPage} of {studentsData.totalPages} ({studentsData.total} total students)
                 </div>
                 <div className="flex gap-2">
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                   >
                     Previous
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => setCurrentPage(prev => Math.min(studentsData.totalPages, prev + 1))}
                     disabled={currentPage === studentsData.totalPages}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                   >
                     Next
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
           </>
         )}
-      </div>
+      </Card>
 
       {/* Create Student Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Student</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  First Name (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Name (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Grade (Optional)
-                </label>
-                <select
-                  value={formData.grade}
-                  onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                >
-                  <option value="">Select Grade</option>
-                  {grades.map(grade => (
-                    <option key={grade} value={grade}>Grade {grade}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Age (Optional)
-                </label>
-                <input
-                  type="number"
-                  min="3"
-                  max="18"
-                  value={formData.age || ''}
-                  onChange={(e) => setFormData({ ...formData, age: e.target.value ? parseInt(e.target.value) : undefined })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                />
-              </div>
-              <p className="text-sm text-gray-500">
-                A unique student code will be generated automatically
-              </p>
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Student</DialogTitle>
+            <DialogDescription>
+              Create a new student account. A unique student code will be generated automatically.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="firstName">First Name (Optional)</Label>
+              <Input
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              />
             </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  resetForm();
-                }}
-                className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+            <div className="grid gap-2">
+              <Label htmlFor="lastName">Last Name (Optional)</Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="grade">Grade (Optional)</Label>
+              <Select
+                value={formData.grade}
+                onValueChange={(value) => setFormData({ ...formData, grade: value })}
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitCreate}
-                disabled={createStudentMutation.isPending}
-                className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
-              >
-                {createStudentMutation.isPending ? 'Creating...' : 'Create Student'}
-              </button>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {grades.map(grade => (
+                    <SelectItem key={grade} value={grade}>Grade {grade}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="age">Age (Optional)</Label>
+              <Input
+                id="age"
+                type="number"
+                min="3"
+                max="18"
+                value={formData.age || ''}
+                onChange={(e) => setFormData({ ...formData, age: e.target.value && !isNaN(parseInt(e.target.value)) ? parseInt(e.target.value) : undefined })}
+              />
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateModal(false);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitCreate}
+              disabled={createStudentMutation.isPending}
+            >
+              {createStudentMutation.isPending ? 'Creating...' : 'Create Student'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Student Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Student</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Student Code
-                </label>
-                <input
-                  type="text"
+      <Dialog open={!!showEditModal} onOpenChange={(open) => !open && setShowEditModal(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Student</DialogTitle>
+            <DialogDescription>
+              Update student information. The student code cannot be changed.
+            </DialogDescription>
+          </DialogHeader>
+          {showEditModal && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="studentCode">Student Code</Label>
+                <Input
+                  id="studentCode"
                   value={showEditModal.studentCode}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
+                  className="bg-muted"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  First Name (Optional)
-                </label>
-                <input
-                  type="text"
+              <div className="grid gap-2">
+                <Label htmlFor="editFirstName">First Name (Optional)</Label>
+                <Input
+                  id="editFirstName"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Name (Optional)
-                </label>
-                <input
-                  type="text"
+              <div className="grid gap-2">
+                <Label htmlFor="editLastName">Last Name (Optional)</Label>
+                <Input
+                  id="editLastName"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Grade (Optional)
-                </label>
-                <select
+              <div className="grid gap-2">
+                <Label htmlFor="editGrade">Grade (Optional)</Label>
+                <Select
                   value={formData.grade}
-                  onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  onValueChange={(value) => setFormData({ ...formData, grade: value })}
                 >
-                  <option value="">Select Grade</option>
-                  {grades.map(grade => (
-                    <option key={grade} value={grade}>Grade {grade}</option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {grades.map(grade => (
+                      <SelectItem key={grade} value={grade}>Grade {grade}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Age (Optional)
-                </label>
-                <input
+              <div className="grid gap-2">
+                <Label htmlFor="editAge">Age (Optional)</Label>
+                <Input
+                  id="editAge"
                   type="number"
                   min="3"
                   max="18"
                   value={formData.age || ''}
-                  onChange={(e) => setFormData({ ...formData, age: e.target.value ? parseInt(e.target.value) : undefined })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  onChange={(e) => setFormData({ ...formData, age: e.target.value && !isNaN(parseInt(e.target.value)) ? parseInt(e.target.value) : undefined })}
                 />
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => {
-                  setShowEditModal(null);
-                  resetForm();
-                }}
-                className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitEdit}
-                disabled={updateStudentMutation.isPending}
-                className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
-              >
-                {updateStudentMutation.isPending ? 'Updating...' : 'Update Student'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditModal(null);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitEdit}
+              disabled={updateStudentMutation.isPending}
+            >
+              {updateStudentMutation.isPending ? 'Updating...' : 'Update Student'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Import Modal */}
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Import Students from CSV</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  CSV File
-                </label>
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  CSV should have columns: firstName, lastName, grade, age
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => {
-                  setShowImportModal(false);
-                  setImportFile(null);
-                }}
-                className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => importFile && importCSVMutation.mutate(importFile)}
-                disabled={!importFile || importCSVMutation.isPending}
-                className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
-              >
-                {importCSVMutation.isPending ? 'Importing...' : 'Import'}
-              </button>
+      <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Import Students from CSV</DialogTitle>
+            <DialogDescription>
+              Upload a CSV file to import multiple students at once.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="csvFile">CSV File</Label>
+              <Input
+                id="csvFile"
+                type="file"
+                accept=".csv"
+                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+              />
+              <p className="text-sm text-muted-foreground">
+                CSV should have columns: firstName, lastName, grade, age
+              </p>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowImportModal(false);
+                setImportFile(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => importFile && importCSVMutation.mutate(importFile)}
+              disabled={!importFile || importCSVMutation.isPending}
+            >
+              {importCSVMutation.isPending ? 'Importing...' : 'Import'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex items-center gap-3 mb-4">
-              <ExclamationTriangleIcon className="h-6 w-6 text-red-500" />
-              <h3 className="text-lg font-medium text-gray-900">Deactivate Student</h3>
+      <Dialog open={!!showDeleteModal} onOpenChange={(open) => !open && setShowDeleteModal(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <DialogTitle>Deactivate Student</DialogTitle>
             </div>
-            <p className="text-gray-600 mb-6">
+            <DialogDescription>
               Are you sure you want to deactivate this student? They will no longer be able to log in, but their data will be preserved.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteModal(null)}
-                className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => deactivateStudentMutation.mutate(showDeleteModal)}
-                disabled={deactivateStudentMutation.isPending}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-              >
-                {deactivateStudentMutation.isPending ? 'Deactivating...' : 'Deactivate'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteModal(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => showDeleteModal && deactivateStudentMutation.mutate(showDeleteModal)}
+              disabled={deactivateStudentMutation.isPending}
+            >
+              {deactivateStudentMutation.isPending ? 'Deactivating...' : 'Deactivate'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

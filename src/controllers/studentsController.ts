@@ -62,7 +62,7 @@ export const studentsController = {
     if (filters?.page) params.append('page', String(filters.page));
     if (filters?.limit) params.append('limit', String(filters.limit));
 
-    const response = await fetch(`${API_BASE_URL}/hubs/${hubId}/students?${params}`, {
+    const response = await fetch(`${API_BASE_URL}/edge-hubs/${hubId}/students?${params}`, {
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
         'Content-Type': 'application/json',
@@ -77,7 +77,7 @@ export const studentsController = {
   },
 
   async createStudent(hubId: string, data: CreateStudentRequest): Promise<Student> {
-    const response = await fetch(`${API_BASE_URL}/hubs/${hubId}/students`, {
+    const response = await fetch(`${API_BASE_URL}/edge-hubs/${hubId}/students`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
@@ -126,7 +126,7 @@ export const studentsController = {
   },
 
   async bulkImportStudents(hubId: string, data: BulkImportStudentRequest): Promise<Student[]> {
-    const response = await fetch(`${API_BASE_URL}/hubs/${hubId}/students/bulk`, {
+    const response = await fetch(`${API_BASE_URL}/edge-hubs/${hubId}/students/bulk`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
@@ -143,7 +143,7 @@ export const studentsController = {
   },
 
   async exportStudents(hubId: string): Promise<Blob> {
-    const response = await fetch(`${API_BASE_URL}/hubs/${hubId}/students/export`, {
+    const response = await fetch(`${API_BASE_URL}/edge-hubs/${hubId}/students/export`, {
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
       },
@@ -163,7 +163,7 @@ export const studentsController = {
     byGrade: Record<string, number>;
     averageAge?: number;
   }> {
-    const response = await fetch(`${API_BASE_URL}/hubs/${hubId}/students/stats`, {
+    const response = await fetch(`${API_BASE_URL}/edge-hubs/${hubId}/students/stats`, {
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
       },
@@ -180,7 +180,7 @@ export const studentsController = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_BASE_URL}/hubs/${hubId}/students/import-csv`, {
+    const response = await fetch(`${API_BASE_URL}/edge-hubs/${hubId}/students/import-csv`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,

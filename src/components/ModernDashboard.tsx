@@ -1,19 +1,22 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { 
-  UsersIcon, 
-  DocumentTextIcon, 
-  ChartBarIcon, 
-  GlobeAltIcon,
-  ArrowTrendingUpIcon,
-  EyeIcon,
-  ClockIcon,
-  CheckCircleIcon
-} from '@heroicons/react/24/outline';
+  Users, 
+  FileText, 
+  BarChart3, 
+  Globe,
+  TrendingUp,
+  Eye,
+  Clock,
+  CheckCircle
+} from 'lucide-react';
 import { analyticsController, DashboardStats } from '@/controllers/analyticsController';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function ModernDashboard() {
   const router = useRouter();
@@ -26,8 +29,25 @@ export function ModernDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+      <div className="space-y-8">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-[250px]" />
+          <Skeleton className="h-4 w-[400px]" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-[100px]" />
+                <Skeleton className="h-4 w-4" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-7 w-[60px] mb-1" />
+                <Skeleton className="h-3 w-[80px]" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -38,28 +58,28 @@ export function ModernDashboard() {
       value: stats.totalContent?.toLocaleString() || '0',
       change: stats.totalContent > 0 ? '+12%' : '+0%',
       changeType: 'positive',
-      icon: DocumentTextIcon,
+      icon: FileText,
     },
     {
       name: 'Active Users',
       value: stats.activeUsers?.toLocaleString() || '0',
       change: stats.activeUsers > 0 ? '+8%' : '+0%',
       changeType: 'positive',
-      icon: UsersIcon,
+      icon: Users,
     },
     {
       name: 'Edge Hubs',
       value: stats.edgeHubs?.toLocaleString() || '0',
       change: stats.edgeHubs > 0 ? '+5%' : '+0%',
       changeType: 'positive',
-      icon: GlobeAltIcon,
+      icon: Globe,
     },
     {
       name: 'Completion Rate',
       value: `${stats.completionRate?.toFixed(1) || '0'}%`,
       change: stats.completionRate > 0 ? '+3%' : '+0%',
       changeType: 'positive',
-      icon: CheckCircleIcon,
+      icon: CheckCircle,
     },
   ] : [];
 
@@ -70,174 +90,156 @@ export function ModernDashboard() {
     { id: 4, title: 'Weekly analytics report generated', time: '1 day ago', status: 'completed' },
   ];
 
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'secondary';
+      case 'success':
+        return 'default';
+      case 'review':
+        return 'outline';
+      case 'completed':
+        return 'secondary';
+      default:
+        return 'secondary';
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-black">
+          <h1 className="text-3xl font-bold tracking-tight">
             Dashboard Overview
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground">
             Welcome back! Here's what's happening with Hiqma today.
           </p>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsArray.map((stat, index) => (
-          <motion.div
-            key={stat.name}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-xl p-6 hover:shadow-lg transition-shadow shadow-sm"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  {stat.name}
-                </p>
-                <p className="text-2xl font-bold text-black mt-1">
-                  {stat.value}
-                </p>
-                <div className="flex items-center mt-2">
-                  <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
-                  <span className="text-sm text-green-600 font-medium">
-                    {stat.change}
-                  </span>
-                </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {statsArray.map((stat) => (
+          <Card key={stat.name}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {stat.name}
+              </CardTitle>
+              <stat.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="flex items-center text-xs text-muted-foreground">
+                <TrendingUp className="mr-1 h-3 w-3 text-green-500" />
+                <span className="text-green-600 font-medium">
+                  {stat.change}
+                </span>
+                <span className="ml-1">from last month</span>
               </div>
-              <div className="p-3 bg-black rounded-lg">
-                <stat.icon className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </motion.div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid gap-4 lg:grid-cols-3">
         {/* Recent Activity */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-          className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-black">
-              Recent Activity
-            </h2>
-            <button className="text-sm text-blue-600 hover:underline">
-              View all
-            </button>
-          </div>
-          <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <div>
-                    <p className="text-sm font-medium text-black">
-                      {activity.title}
-                    </p>
-                    <div className="flex items-center text-xs text-gray-500 mt-1">
-                      <ClockIcon className="h-3 w-3 mr-1" />
-                      {activity.time}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Recent Activity</CardTitle>
+              <Button variant="outline" size="sm">
+                View all
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentActivity.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center justify-between p-4 rounded-lg border"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium">
+                        {activity.title}
+                      </p>
+                      <div className="flex items-center text-xs text-muted-foreground mt-1">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {activity.time}
+                      </div>
                     </div>
                   </div>
+                  <Badge variant={getStatusVariant(activity.status)}>
+                    {activity.status}
+                  </Badge>
                 </div>
-                <span className={`
-                  px-2 py-1 text-xs font-medium rounded-full
-                  ${activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-                  ${activity.status === 'success' ? 'bg-green-100 text-green-800' : ''}
-                  ${activity.status === 'review' ? 'bg-blue-100 text-blue-800' : ''}
-                  ${activity.status === 'completed' ? 'bg-gray-100 text-gray-800' : ''}
-                `}>
-                  {activity.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white rounded-xl p-6 shadow-sm"
-        >
-          <h2 className="text-xl font-bold text-black mb-6">
-            Quick Actions
-          </h2>
-          <div className="space-y-3">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => router.push('/content')}
-              className="w-full p-4 text-left bg-black text-white rounded-lg hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-center">
-                <DocumentTextIcon className="h-5 w-5 mr-3" />
-                <div>
-                  <p className="font-medium">Review Content</p>
-                  <p className="text-sm opacity-90">{stats?.totalContent || 0} total content</p>
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Button
+                onClick={() => router.push('/content')}
+                className="w-full justify-start h-auto py-4"
+                variant="default"
+              >
+                <FileText className="mr-3 h-5 w-5 flex-shrink-0" />
+                <div className="text-left flex-1">
+                  <div className="font-semibold text-base">Review Content</div>
+                  <div className="text-sm opacity-90 mt-0.5">{stats?.totalContent || 0} total content</div>
                 </div>
-              </div>
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => router.push('/contributors')}
-              className="w-full p-4 text-left bg-gray-800 text-white rounded-lg hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-center">
-                <UsersIcon className="h-5 w-5 mr-3" />
-                <div>
-                  <p className="font-medium">Manage Contributors</p>
-                  <p className="text-sm opacity-90">{stats?.activeUsers || 0} active users</p>
+              </Button>
+              
+              <Button
+                onClick={() => router.push('/contributors')}
+                className="w-full justify-start h-auto py-4"
+                variant="secondary"
+              >
+                <Users className="mr-3 h-5 w-5 flex-shrink-0" />
+                <div className="text-left flex-1">
+                  <div className="font-semibold text-base">Manage Contributors</div>
+                  <div className="text-sm opacity-90 mt-0.5">{stats?.activeUsers || 0} active users</div>
                 </div>
-              </div>
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => router.push('/analytics')}
-              className="w-full p-4 text-left bg-gray-600 text-white rounded-lg hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-center">
-                <ChartBarIcon className="h-5 w-5 mr-3" />
-                <div>
-                  <p className="font-medium">View Analytics</p>
-                  <p className="text-sm opacity-90">{stats?.completionRate?.toFixed(1) || 0}% completion rate</p>
+              </Button>
+              
+              <Button
+                onClick={() => router.push('/analytics')}
+                className="w-full justify-start h-auto py-4"
+                variant="outline"
+              >
+                <BarChart3 className="mr-3 h-5 w-5 flex-shrink-0" />
+                <div className="text-left flex-1">
+                  <div className="font-semibold text-base">View Analytics</div>
+                  <div className="text-sm opacity-90 mt-0.5">{stats?.completionRate?.toFixed(1) || 0}% completion rate</div>
                 </div>
-              </div>
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => router.push('/edge-hubs')}
-              className="w-full p-4 text-left bg-gray-500 text-white rounded-lg hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-center">
-                <GlobeAltIcon className="h-5 w-5 mr-3" />
-                <div>
-                  <p className="font-medium">Manage Edge Hubs</p>
-                  <p className="text-sm opacity-90">{stats?.edgeHubs || 0} registered hubs</p>
+              </Button>
+              
+              <Button
+                onClick={() => router.push('/edge-hubs')}
+                className="w-full justify-start h-auto py-4"
+                variant="outline"
+              >
+                <Globe className="mr-3 h-5 w-5 flex-shrink-0" />
+                <div className="text-left flex-1">
+                  <div className="font-semibold text-base">Manage Edge Hubs</div>
+                  <div className="text-sm opacity-90 mt-0.5">{stats?.edgeHubs || 0} registered hubs</div>
                 </div>
-              </div>
-            </motion.button>
-          </div>
-        </motion.div>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

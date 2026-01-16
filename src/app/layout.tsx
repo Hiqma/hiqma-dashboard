@@ -5,6 +5,8 @@ import { QueryProvider } from '@/lib/queryClient';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { ToastContainer } from '@/components/Toast';
 import { ConfirmationProvider } from '@/contexts/ConfirmationContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/components/theme-provider';
 import { LayoutWrapper } from '@/components/LayoutWrapper';
 import "./globals.css";
 import "../styles/tiptap.css";
@@ -26,17 +28,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased bg-white text-gray-900`} suppressHydrationWarning>
-        <ConfirmationProvider>
-          <ToastProvider>
-            <QueryProvider>
-              <LayoutWrapper>
-                {children}
-              </LayoutWrapper>
-              <ToastContainer />
-            </QueryProvider>
-          </ToastProvider>
-        </ConfirmationProvider>
+      <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <ConfirmationProvider>
+              <ToastProvider>
+                <QueryProvider>
+                  <LayoutWrapper>
+                    {children}
+                  </LayoutWrapper>
+                  <ToastContainer />
+                </QueryProvider>
+              </ToastProvider>
+            </ConfirmationProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

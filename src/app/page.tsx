@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LandingPage } from '@/components/LandingPage';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
@@ -19,8 +20,12 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="space-y-4 w-full max-w-md">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
       </div>
     );
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DocumentTextIcon, MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { FileText, Search, Filter, Eye, Edit, Check, X } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ActionDropdown } from './ActionDropdown';
 import { contentController } from '@/controllers/contentController';
@@ -9,28 +9,53 @@ import { useToast } from '@/contexts/ToastContext';
 import { authController } from '@/controllers/authController';
 import { usersController } from '@/controllers/usersController';
 import { EditContentForm } from './EditContentForm';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export function ContentReview() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [contributorFilter, setContributorFilter] = useState<string>('');
+  const [contributorFilter, setContributorFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [editingContentId, setEditingContentId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
+  // Debounce search term for server-side search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Get current user to check if super_admin
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
   
   useEffect(() => {
     const checkUserRole = async () => {
       try {
         const user = await authController.getCurrentUser();
+        console.log('Current user:', user);
         setIsSuperAdmin(user.role === 'super_admin' || user.role === 'moderator');
+        setAuthError(null);
       } catch (error) {
         console.error('Failed to get user role:', error);
         setIsSuperAdmin(false);
+        setAuthError(error instanceof Error ? error.message : 'Failed to authenticate');
       }
     };
     checkUserRole();
@@ -43,27 +68,34 @@ export function ContentReview() {
     enabled: isSuperAdmin === true,
   });
 
-  const { data: contentData, isLoading } = useQuery({
-    queryKey: ['admin-content', searchTerm, statusFilter, contributorFilter, currentPage, isSuperAdmin],
-    queryFn: () => {
-      // Use admin endpoint if super admin, otherwise use pending endpoint
-      if (isSuperAdmin) {
-        return contentController.getAdminContent({ 
-          search: searchTerm || undefined,
-          status: statusFilter !== 'all' ? statusFilter : undefined,
-          contributorId: contributorFilter || undefined,
-          page: currentPage, 
-          limit: 10 
-        });
-      } else {
-        return contentController.getPendingContent({ 
-          search: searchTerm || undefined, 
-          page: currentPage, 
-          limit: 10 
-        });
+  const { data: contentData, isLoading, error } = useQuery({
+    queryKey: ['admin-content', debouncedSearchTerm, statusFilter, contributorFilter, currentPage, isSuperAdmin],
+    queryFn: async () => {
+      try {
+        // Use admin endpoint if super admin, otherwise use pending endpoint
+        if (isSuperAdmin) {
+          return await contentController.getAdminContent({ 
+            search: debouncedSearchTerm || undefined,
+            status: statusFilter !== 'all' ? statusFilter : undefined,
+            contributorId: contributorFilter !== 'all' ? contributorFilter : undefined,
+            page: currentPage, 
+            limit: 10 
+          });
+        } else {
+          return await contentController.getPendingContent({ 
+            search: debouncedSearchTerm || undefined, 
+            page: currentPage, 
+            limit: 10 
+          });
+        }
+      } catch (error) {
+        console.error('Content fetch error:', error);
+        throw error;
       }
     },
     enabled: isSuperAdmin !== null, // Only run query after we know the user role
+    retry: 1, // Only retry once
+    retryDelay: 1000,
   });
 
   const updateStatusMutation = useMutation({
@@ -92,13 +124,17 @@ export function ContentReview() {
     setCurrentPage(1);
   };
 
-  const getStatusBadge = (status: string) => {
-    const badges = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      verified: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800',
-    };
-    return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800';
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'secondary';
+      case 'verified':
+        return 'default';
+      case 'rejected':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
   };
 
   const getStatusLabel = (status: string) => {
@@ -115,8 +151,47 @@ export function ContentReview() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center gap-4">
+          <Skeleton className="h-10 w-[300px]" />
+          <Skeleton className="h-10 w-[100px]" />
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-16 w-12" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-[150px]" />
+                  </div>
+                  <Skeleton className="h-6 w-[80px]" />
+                  <Skeleton className="h-8 w-[60px]" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show authentication error if user is not logged in
+  if (authError && authError.includes('No auth token found')) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="p-6 text-center">
+            <h3 className="font-semibold text-red-800 mb-2">Authentication Required</h3>
+            <p className="text-red-700 mb-4">
+              You need to be logged in to view content. Please log in to continue.
+            </p>
+            <Button asChild>
+              <a href="/login">Go to Login</a>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -126,260 +201,273 @@ export function ContentReview() {
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center gap-4">
           <div className="relative flex-1 max-w-md">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
               placeholder="Search content by title or description..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-black placeholder-gray-500"
+              className="pl-9"
             />
           </div>
           
           {isSuperAdmin && (
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white text-black hover:bg-gray-50"
-            >
-              <FunnelIcon className="h-5 w-5" />
-              Filters
-            </button>
+            <Collapsible open={showFilters} onOpenChange={setShowFilters}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Filters
+                </Button>
+              </CollapsibleTrigger>
+            </Collapsible>
           )}
         </div>
 
         {/* Filter Panel */}
-        {isSuperAdmin && showFilters && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Status
-                </label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    handleFilterChange();
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-black"
-                >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="verified">Verified</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
+        {isSuperAdmin && (
+          <Collapsible open={showFilters} onOpenChange={setShowFilters}>
+            <CollapsibleContent>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Status</Label>
+                      <Select
+                        value={statusFilter}
+                        onValueChange={(value) => {
+                          setStatusFilter(value);
+                          handleFilterChange();
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Status</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="verified">Verified</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contributor
-                </label>
-                <select
-                  value={contributorFilter}
-                  onChange={(e) => {
-                    setContributorFilter(e.target.value);
-                    handleFilterChange();
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-black"
-                >
-                  <option value="">All Contributors</option>
-                  {contributors.map((contributor) => (
-                    <option key={contributor.id} value={contributor.id}>
-                      {contributor.name || contributor.email}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                    <div className="space-y-2">
+                      <Label>Contributor</Label>
+                      <Select
+                        value={contributorFilter}
+                        onValueChange={(value) => {
+                          setContributorFilter(value);
+                          handleFilterChange();
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Contributors" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Contributors</SelectItem>
+                          {contributors.map((contributor) => (
+                            <SelectItem key={contributor.id} value={contributor.id}>
+                              {contributor.name || contributor.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              <div className="flex items-end">
-                <button
-                  onClick={() => {
-                    setStatusFilter('all');
-                    setContributorFilter('');
-                    handleFilterChange();
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-black hover:bg-gray-50"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            </div>
-          </div>
+                    <div className="flex items-end">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setStatusFilter('all');
+                          setContributorFilter('all');
+                          handleFilterChange();
+                        }}
+                        className="w-full"
+                      >
+                        Clear Filters
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </CollapsibleContent>
+          </Collapsible>
         )}
       </div>
 
-      <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-white">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
-                  Content
-                </th>
-                {isSuperAdmin && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
-                    Contributor
-                  </th>
-                )}
-                <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
-                  Language
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {pendingContent.map((content) => (
-                <tr key={content.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      {content.coverImageUrl ? (
-                        <div className="w-12 h-16 mr-3 rounded overflow-hidden shadow-sm flex-shrink-0" style={{ aspectRatio: '3/4' }}>
-                          <img
-                            src={content.coverImageUrl}
-                            alt={`Cover for ${content.title}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <DocumentTextIcon className="h-8 w-8 text-gray-400 mr-3 flex-shrink-0" />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium text-black">
-                          {content.title}
-                        </div>
-                        {content.description && (
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {content.description.substring(0, 100)}...
-                          </div>
-                        )}
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Content</TableHead>
+              {isSuperAdmin && <TableHead>Contributor</TableHead>}
+              <TableHead>Category</TableHead>
+              <TableHead>Language</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pendingContent.map((content) => (
+              <TableRow key={content.id}>
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    {content.coverImageUrl ? (
+                      <div className="w-12 h-16 rounded overflow-hidden shadow-sm flex-shrink-0" style={{ aspectRatio: '3/4' }}>
+                        <img
+                          src={content.coverImageUrl}
+                          alt={`Cover for ${content.title}`}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
+                    ) : (
+                      <div className="w-12 h-16 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                        <FileText className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium">
+                        {content.title}
+                      </div>
+                      {content.description && (
+                        <div className="text-sm text-muted-foreground truncate max-w-xs">
+                          {content.description.substring(0, 100)}...
+                        </div>
+                      )}
                     </div>
-                  </td>
-                  {isSuperAdmin && (
-                    <td className="px-6 py-4 text-sm text-black">
-                      {(content as any).contributor?.name || (content as any).contributor?.email || 'N/A'}
-                    </td>
-                  )}
-                  <td className="px-6 py-4 text-sm text-black">
-                    {content.category?.name || (content as any).categories?.[0]?.name || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-black">
-                    {content.language}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(content.status)}`}>
-                      {getStatusLabel(content.status)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium">
-                    <div className="flex gap-2">
-                      <a
-                        href={`/review-content/${content.id}`}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
-                      >
+                  </div>
+                </TableCell>
+                {isSuperAdmin && (
+                  <TableCell>
+                    {(content as any).contributor?.name || (content as any).contributor?.email || 'N/A'}
+                  </TableCell>
+                )}
+                <TableCell>
+                  {content.category?.name || (content as any).categories?.[0]?.name || 'N/A'}
+                </TableCell>
+                <TableCell>
+                  {content.language}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={getStatusVariant(content.status)}>
+                    {getStatusLabel(content.status)}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" asChild>
+                      <a href={`/review-content/${content.id}`}>
+                        <Eye className="mr-1 h-3 w-3" />
                         {content.status === 'verified' ? 'View' : 'Review'}
                       </a>
-                      {isSuperAdmin && (
-                        <button
-                          onClick={() => setEditingContentId(content.id)}
-                          className="text-blue-600 hover:text-blue-800 font-medium ml-2"
+                    </Button>
+                    {isSuperAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingContentId(content.id)}
+                      >
+                        <Edit className="mr-1 h-3 w-3" />
+                        Edit
+                      </Button>
+                    )}
+                    {content.status === 'pending' && (
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleStatusUpdate(content.id, 'verified')}
+                          className="text-green-600 hover:text-green-700"
                         >
-                          Edit
-                        </button>
-                      )}
-                      {content.status === 'pending' && (
-                        <ActionDropdown
-                          actions={[
-                            {
-                              label: 'Quick Approve',
-                              onClick: () => handleStatusUpdate(content.id, 'verified'),
-                              className: 'text-green-600',
-                            },
-                            {
-                              label: 'Quick Reject',
-                              onClick: () => handleStatusUpdate(content.id, 'rejected'),
-                              className: 'text-red-600',
-                            },
-                          ]}
-                        />
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {pendingContent.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              {searchTerm ? 'No content found matching your search.' : 'No pending content to review'}
-            </div>
-          )}
-        </div>
+                          <Check className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleStatusUpdate(content.id, 'rejected')}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        
+        {pendingContent.length === 0 && !isLoading && (
+          <div className="text-center py-8 text-muted-foreground">
+            {error ? (
+              <div className="space-y-2">
+                <p className="text-red-600">Error loading content: {error.message}</p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-content'] })}
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : searchTerm ? (
+              'No content found matching your search.'
+            ) : (
+              'No content available'
+            )}
+          </div>
+        )}
         
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-            <div className="text-sm text-gray-700">
+          <div className="flex items-center justify-between px-6 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
               Page {currentPage} of {totalPages} ({contentData?.total} total items)
             </div>
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
                 Previous
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Edit Content Modal */}
-      {editingContentId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-black">Edit Content</h2>
-                <button
-                  onClick={() => setEditingContentId(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <EditContentForm
-                contentId={editingContentId}
-                onClose={() => {
-                  setEditingContentId(null);
-                  queryClient.invalidateQueries({ queryKey: ['admin-content'] });
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={!!editingContentId} onOpenChange={(open) => !open && setEditingContentId(null)}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Content</DialogTitle>
+            <DialogDescription>
+              Make changes to the content details and settings.
+            </DialogDescription>
+          </DialogHeader>
+          {editingContentId && (
+            <EditContentForm
+              contentId={editingContentId}
+              onClose={() => {
+                setEditingContentId(null);
+                queryClient.invalidateQueries({ queryKey: ['admin-content'] });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

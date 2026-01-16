@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { EyeIcon, EyeSlashIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/contexts/ToastContext';
-import { authController } from '@/controllers/authController';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -14,22 +14,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { showToast } = useToast();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const data = await authController.login(email, password);
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('userRole', data.user.role);
-      localStorage.setItem('userId', data.user.id);
-      localStorage.setItem('userName', data.user.name || data.user.email);
-      localStorage.setItem('authToken', data.access_token);
-      
-      // Trigger auth change event for immediate UI update
-      window.dispatchEvent(new Event('authChange'));
-      
+      await login(email, password);
       showToast('success', 'Login successful! Welcome back.');
       router.push('/');
     } catch (error) {

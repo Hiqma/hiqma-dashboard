@@ -1,22 +1,33 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { PlusIcon, UserIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { Plus, User, Search, Edit, Trash2, MoreHorizontal } from 'lucide-react';
 import { authorsController, Author, CreateAuthorData } from '@/controllers/authorsController';
 import { useToast } from '@/contexts/ToastContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
-import { AuthorDetailModal } from './AuthorDetailModal';
 import { AuthorFormModal } from './AuthorFormModal';
-import { ActionDropdown } from './ActionDropdown';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function AuthorsManagement() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { confirm } = useConfirmation();
   const [showForm, setShowForm] = useState(false);
   const [editingAuthor, setEditingAuthor] = useState<Author | null>(null);
-  const [viewingAuthor, setViewingAuthor] = useState<Author | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [formData, setFormData] = useState({
@@ -110,154 +121,163 @@ export function AuthorsManagement() {
   };
 
   const handleView = (author: Author) => {
-    setViewingAuthor(author);
+    router.push(`/authors/${author.id}`);
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-10 w-[300px]" />
+          <Skeleton className="h-10 w-[120px]" />
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-8 w-8" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-[150px]" />
+                  </div>
+                  <Skeleton className="h-6 w-[60px]" />
+                  <Skeleton className="h-8 w-[40px]" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-4">
         <div className="relative flex-1 max-w-md">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
             placeholder="Search authors..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-black placeholder-gray-500"
+            className="pl-9"
           />
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-black text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 flex items-center gap-2 ml-4"
-        >
-          <PlusIcon className="h-5 w-5" />
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="mr-2 h-4 w-4" />
           Add Author
-        </button>
+        </Button>
       </div>
 
-
-
-      <div className="glass rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-white">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
-                  Author
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
-                  Nationality
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
-                  Birth Year
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {authors?.map((author) => (
-                <tr key={author.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <UserIcon className="h-8 w-8 text-gray-400 mr-3" />
-                      <div>
-                        <div className="text-sm font-medium text-black">
-                          {author.name}
-                        </div>
-                        {author.bio && (
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {author.bio}
-                          </div>
-                        )}
-                      </div>
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Author</TableHead>
+              <TableHead>Nationality</TableHead>
+              <TableHead>Birth Year</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {authors?.map((author) => (
+              <TableRow key={author.id}>
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
+                      <User className="h-4 w-4 text-muted-foreground" />
                     </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-black">
-                    {author.nationality || '-'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-black">
-                    {author.birthYear || '-'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      author.isContributor 
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {author.isContributor ? 'Contributor' : 'Author'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium">
-                    <ActionDropdown
-                      actions={[
-                        {
-                          label: 'View Details',
-                          onClick: () => handleView(author),
-                        },
-                        {
-                          label: 'Edit',
-                          onClick: () => handleEdit(author),
-                        },
-                        {
-                          label: 'Delete',
-                          onClick: () => handleDelete(author.id),
-                          className: 'text-red-600',
-                        },
-                      ]}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {authors?.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              {searchTerm ? 'No authors found matching your search.' : 'No authors found. Add your first author to get started.'}
-            </div>
-          )}
-        </div>
+                    <div>
+                      <div className="font-medium">
+                        {author.name}
+                      </div>
+                      {author.bio && (
+                        <div className="text-sm text-muted-foreground truncate max-w-xs">
+                          {author.bio}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {author.nationality || '-'}
+                </TableCell>
+                <TableCell>
+                  {author.birthYear || '-'}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={author.isContributor ? 'default' : 'secondary'}>
+                    {author.isContributor ? 'Contributor' : 'Author'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleView(author)}>
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEdit(author)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDelete(author.id)}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        
+        {authors?.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            {searchTerm ? 'No authors found matching your search.' : 'No authors found. Add your first author to get started.'}
+          </div>
+        )}
         
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-            <div className="text-sm text-gray-700">
+          <div className="flex items-center justify-between px-6 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
               Page {currentPage} of {totalPages}
             </div>
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
                 Previous
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Author Form Modal */}
       <AuthorFormModal
@@ -269,14 +289,6 @@ export function AuthorsManagement() {
         setFormData={setFormData}
         isLoading={createMutation.isPending || updateMutation.isPending}
       />
-
-      {/* Author Detail Modal */}
-      {viewingAuthor && (
-        <AuthorDetailModal
-          author={viewingAuthor}
-          onClose={() => setViewingAuthor(null)}
-        />
-      )}
     </div>
   );
 }

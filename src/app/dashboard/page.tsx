@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ModernDashboard } from '@/components/ModernDashboard';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -21,8 +22,18 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-[250px]" />
+          <Skeleton className="h-4 w-[400px]" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="space-y-3">
+              <Skeleton className="h-[125px] w-full rounded-xl" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -31,11 +42,5 @@ export default function DashboardPage() {
     return null;
   }
 
-  return (
-    <div className="pt-16 bg-[#f5f5f7] min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ModernDashboard />
-      </div>
-    </div>
-  );
+  return <ModernDashboard />;
 }

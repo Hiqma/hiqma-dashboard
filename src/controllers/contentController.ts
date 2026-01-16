@@ -3,6 +3,7 @@ interface Content {
   title: string;
   description?: string;
   fileUrl: string;
+  coverImageUrl?: string;
   status: 'pending' | 'verified' | 'rejected';
   language: string;
   category: { id: string; name: string; };

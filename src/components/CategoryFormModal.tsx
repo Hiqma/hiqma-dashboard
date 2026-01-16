@@ -60,7 +60,7 @@ export function CategoryFormModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -69,26 +69,27 @@ export function CategoryFormModal({
         onClick={onClose}
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative bg-white rounded-xl p-6 w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto"
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="fixed right-0 top-0 h-full w-full max-w-2xl bg-card shadow-xl overflow-y-auto border-l border-border"
       >
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-black">
+        <div className="flex items-center justify-between mb-6 p-6 border-b border-border">
+          <h3 className="text-xl font-semibold text-foreground">
             {editingCategory ? 'Edit Category' : 'Add New Category'}
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-muted-foreground hover:text-foreground"
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div>
-            <label className="block text-sm font-medium mb-2 text-black">
+            <label className="block text-sm font-medium mb-2 text-foreground">
               Name *
             </label>
             <input
@@ -96,12 +97,12 @@ export function CategoryFormModal({
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium mb-2 text-black">
+            <label className="block text-sm font-medium mb-2 text-foreground">
               Parent Category
             </label>
             <SearchableSelect
@@ -115,14 +116,14 @@ export function CategoryFormModal({
           </div>
           
           <div>
-            <label className="block text-sm font-medium mb-2 text-black">
+            <label className="block text-sm font-medium mb-2 text-foreground">
               Description
             </label>
             <textarea
               rows={3}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
               placeholder="Enter category description..."
             />
           </div>
@@ -131,14 +132,14 @@ export function CategoryFormModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+              className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
             >
               {isLoading ? 'Saving...' : (editingCategory ? 'Update Category' : 'Create Category')}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-600 flex-1"
+              className="bg-muted text-foreground px-6 py-2 rounded-lg font-medium hover:bg-muted/80 flex-1"
             >
               Cancel
             </button>
